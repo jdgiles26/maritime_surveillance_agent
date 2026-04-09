@@ -1,0 +1,143 @@
+version: '3.9'
+
+services:
+  # MQTT Broker for alerts
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: maritime_mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+    networks:
+      - maritime
+
+  # Mistral AI (keyless WebGPU backend)
+  # Note: Run Mistral locally via ollama or use mistral-tiny API
+  mistral_ollama:
+    image: ollama/ollama:latest
+    container_name: maritime_mistral
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - maritime
+    # Pull model on startup: ollama pull mistral or ollama pull neural-chat
+    # For vision: use llava or bakllava models
+
+  # Video ingestion & frame extraction service
+  video_ingestion:
+    build:
+      context: ./services/video_ingestion
+      dockerfile: Dockerfile
+    container_name: maritime_video_ingestion
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - VIDEO_FRAME_INTERVAL=2  # Extract frame every 2 seconds
+      - YOLO_MODEL=yolov8n.pt
+    volumes:
+      - ./uploads:/app/uploads
+      - ./frames:/app/frames
+      - ./videos:/app/videos
+    depends_on:
+      - mosquitto
+    networks:
+      - maritime
+    restart: unless-stopped
+
+  # Document processor (extract vessel info from PDFs)
+  document_processor:
+    build:
+      context: ./services/document_processor
+      dockerfile: Dockerfile
+    container_name: maritime_document_processor
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - MISTRAL_BASE_URL=http://mistral_ollama:11434
+    volumes:
+      - ./uploads:/app/uploads
+      - ./documents:/app/documents
+    depends_on:
+      - mosquitto
+      - mistral_ollama
+    networks:
+      - maritime
+    restart: unless-stopped
+
+  # CV Agent (threat detection + correlation)
+  cv_agent:
+    build:
+      context: ./services/cv_agent
+      dockerfile: Dockerfile
+    container_name: maritime_cv_agent
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - MISTRAL_BASE_URL=http://mistral_ollama:11434
+      - FRAME_INPUT_DIR=/app/frames
+      - THREAT_CONFIDENCE_THRESHOLD=0.6
+      - CORRELATION_ENABLED=true
+    volumes:
+      - ./frames:/app/frames
+      - ./documents:/app/documents
+      - ./detections:/app/detections
+    depends_on:
+      - mosquitto
+      - mistral_ollama
+      - document_processor
+    networks:
+      - maritime
+    restart: unless-stopped
+
+  # Alert dispatcher (Slack/Email via MQTT)
+  alert_dispatcher:
+    build:
+      context: ./services/alert_dispatcher
+      dockerfile: Dockerfile
+    container_name: maritime_alert_dispatcher
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_TO=${EMAIL_TO}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+    depends_on:
+      - mosquitto
+    networks:
+      - maritime
+    restart: unless-stopped
+
+  # WebSocket server (for real-time dashboards)
+  websocket_server:
+    build:
+      context: ./services/websocket_server
+      dockerfile: Dockerfile
+    container_name: maritime_websocket
+    ports:
+      - "50000:50000"
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=1883
+      - WS_PORT=50000
+    depends_on:
+      - mosquitto
+    networks:
+      - maritime
+    restart: unless-stopped
+
+networks:
+  maritime:
+    driver: bridge
+
+volumes:
+  mosquitto_data:
+  ollama_data:

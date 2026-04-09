@@ -1,0 +1,66 @@
+======================================================================
+MARITIME SURVEILLANCE ALERT REPORT
+======================================================================
+Report Time: 2026-03-09 14:45:33 UTC
+Overall Threat Level: HIGH
+
+SUMMARY
+======================================================================
+Total Threats Detected: 5
+High-Confidence Threats (>75%): 4
+Average AI Confidence Score: 83.2%
+
+SUSPICIOUS ACTIVITIES
+======================================================================
+Unlit vessel running without navigation lights at night, approximately 500m distance (THREAT: DARK_VESSEL), Two vessels on converging course with CPA of 0.3 nautical miles (THREAT: COLLISION_RISK), Multiple small boats clustered together in coordinated formation (THREAT: VESSEL_GATHERING), Potential loitering behavior in restricted transit lane, Surface discoloration pattern consistent with oil spill (THREAT: OIL_SPILL)
+
+THREAT BREAKDOWN
+======================================================================
+• DARK_VESSEL: 1 detection(s) - Confidence: 87.4%
+• COLLISION_RISK: 1 detection(s) - Confidence: 75.6%
+• VESSEL_GATHERING: 2 detection(s) - Confidence: 81.2%
+• OIL_SPILL: 1 detection(s) - Confidence: 79.8%
+
+RECOMMENDED ACTIONS
+======================================================================
+🟡 Challenge vessel on VHF
+🟡 Request AIS status and intentions
+🟡 Monitor for coordinated activity
+🟡 Log all vessel identities and positions
+🟡 Check for known smuggling routes
+🟡 Alert environmental protection agency
+🟡 Dispatch pollution response team
+🟡 Issue collision warning to both vessels
+🟡 Monitor CPA and vessel speeds
+
+LOCATION DETAILS
+======================================================================
+Threat 1 - DARK_VESSEL
+  Location in Frame: port side, 35% horizontal, 45% vertical
+  Confidence: 87.4%
+  Description: Unlit vessel running without navigation lights at night, approximately 500m distance, high speed maneuvering
+
+Threat 2 - COLLISION_RISK
+  Location in Frame: bow, 60% horizontal, 50% vertical
+  Confidence: 75.6%
+  Description: Two vessels on converging course with CPA of 0.3 nautical miles, closing speed ~12 knots
+
+Threat 3 - VESSEL_GATHERING
+  Location in Frame: center field
+  Confidence: 81.2%
+  Description: Multiple small boats clustered together in tight formation, coordinated maneuvers observed
+
+Threat 4 - VESSEL_GATHERING
+  Location in Frame: starboard side, 70% horizontal, 60% vertical
+  Confidence: 80.2%
+  Description: Three fishing vessels in close proximity, potential rendezvous point
+
+Threat 5 - OIL_SPILL
+  Location in Frame: port side of channel
+  Confidence: 79.8%
+  Description: Surface discoloration pattern consistent with oil spill, approximately 2 hectares visible, rainbow sheen indicates refined products
+
+======================================================================
+Please review the attached threat image for visual reference.
+This is an automated alert from the Maritime Surveillance System.
+======================================================================

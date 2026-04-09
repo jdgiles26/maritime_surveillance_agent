@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maritime Surveillance Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0e27;
+            color: #00ff00;
+            overflow: hidden;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+        }
+        
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(90deg, #1a1f3a 0%, #2d2e47 100%);
+            padding: 20px;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 15px;
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .panel {
+            background: rgba(20, 30, 50, 0.8);
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            padding: 15px;
+            overflow-y: auto;
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.1);
+        }
+        
+        .panel h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #00ff00;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .alert-item {
+            background: rgba(30, 40, 60, 0.9);
+            border-left: 4px solid;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .alert-item:hover {
+            background: rgba(40, 50, 70, 0.9);
+            transform: translateX(5px);
+        }
+        
+        .alert-RED { border-left-color: #ff0000; }
+        .alert-YELLOW { border-left-color: #ffff00; }
+        .alert-ORANGE { border-left-color: #ffa500; }
+        .alert-GREEN { border-left-color: #00ff00; }
+        
+        .threat-level {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .threat-level.RED { color: #ff0000; text-shadow: 0 0 5px #ff0000; }
+        .threat-level.YELLOW { color: #ffff00; text-shadow: 0 0 5px #ffff00; }
+        .threat-level.ORANGE { color: #ffa500; text-shadow: 0 0 5px #ffa500; }
+        .threat-level.GREEN { color: #00ff00; text-shadow: 0 0 5px #00ff00; }
+        
+        .timestamp {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-box {
+            background: rgba(30, 40, 60, 0.9);
+            border: 1px solid #00ff00;
+            padding: 10px;
+            text-align: center;
+            border-radius: 3px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        
+        .threat-description {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #ccc;
+        }
+        
+        .vessel-correlation {
+            background: rgba(255, 0, 0, 0.1);
+            border-left: 3px solid #ff0000;
+            padding: 8px;
+            margin-top: 8px;
+            font-size: 11px;
+            color: #ffaa00;
+        }
+        
+        .scroll-container {
+            height: calc(100% - 50px);
+            overflow-y: auto;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 255, 0, 0.05);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00cc00;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>⚓ MARITIME SURVEILLANCE SYSTEM <span class="status-indicator"></span></h1>
+        </div>
+        
+        <div class="panel">
+            <h2>📊 Statistics</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-label">Total Alerts</div>
+                    <div class="stat-value" id="stat-total">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">🔴 Critical</div>
+                    <div class="stat-value" id="stat-red" style="color: #ff0000; text-shadow: 0 0 5px #ff0000;">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">🟡 Warning</div>
+                    <div class="stat-value" id="stat-yellow" style="color: #ffff00; text-shadow: 0 0 5px #ffff00;">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Clients</div>
+                    <div class="stat-value" id="stat-clients">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2>🚨 Active Threats (Live Feed)</h2>
+            <div class="scroll-container" id="active-threats"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>📋 Alert History</h2>
+            <div class="scroll-container" id="alert-history"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>🎯 Threat Breakdown</h2>
+            <div id="threat-breakdown"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>⚠️ System Alerts</h2>
+            <div class="scroll-container" id="system-alerts"></div>
+        </div>
+    </div>
+
+    <script>
+        class DashboardClient {
+            constructor() {
+                this.ws = null;
+                this.alerts = [];
+                this.stats = { red: 0, yellow: 0, orange: 0, total: 0, clients: 0 };
+                this.threatTypes = {};
+                this.connect();
+                this.requestStats();
+                setInterval(() => this.requestStats(), 10000);  // Update stats every 10s
+            }
+            
+            connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.hostname}:50000`;
+                
+                console.log(`Connecting to ${wsUrl}`);
+                
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onopen = () => {
+                    console.log('Connected to Maritime Surveillance System');
+                    this.addSystemAlert('✓ Connected to surveillance system', 'GREEN');
+                    this.requestHistory();
+                };
+                
+                this.ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    this.handleMessage(message);
+                };
+                
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    this.addSystemAlert('✗ Connection error', 'RED');
+                };
+                
+                this.ws.onclose = () => {
+                    console.log('Disconnected. Reconnecting...');
+                    this.addSystemAlert('✗ Disconnected. Reconnecting...', 'YELLOW');
+                    setTimeout(() => this.connect(), 3000);
+                };
+            }
+            
+            handleMessage(message) {
+                switch(message.type) {
+                    case 'threat_alert':
+                        this.handleThreatAlert(message.alert);
+                        break;
+                    case 'historical_alert':
+                        this.addAlertToHistory(message.alert, true);
+                        break;
+                    case 'alert_history':
+                        message.alerts.forEach(a => this.addAlertToHistory(a, true));
+                        break;
+                    case 'stats':
+                        this.updateStats(message.stats);
+                        break;
+                }
+            }
+            
+            handleThreatAlert(alert) {
+                this.alerts.unshift(alert);
+                if (this.alerts.length > 100) this.alerts.pop();
+                
+                const data = alert.data || {};
+                const level = alert.threat_level;
+                
+                // Add to active threats
+                const threatDiv = document.createElement('div');
+                threatDiv.className = `alert-item alert-${level}`;
+                threatDiv.innerHTML = `
+                    <div class="threat-level ${level}">${level} THREAT</div>
+                    <div class="threat-description">${(data.sitrep || 'No description').substring(0, 80)}...</div>
+                    <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+                `;
+                
+                const activeThreats = document.getElementById('active-threats');
+                activeThreats.insertBefore(threatDiv, activeThreats.firstChild);
+                if (activeThreats.children.length > 20) activeThreats.removeChild(activeThreats.lastChild);
+                
+                // Update threat types
+                if (data.threats) {
+                    data.threats.forEach(t => {
+                        const type = t.threat_type || 'UNKNOWN';
+                        this.threatTypes[type] = (this.threatTypes[type] || 0) + 1;
+                    });
+                }
+                
+                this.updateBreakdown();
+                this.playAlertSound();
+            }
+            
+            addAlertToHistory(alert, isHistorical = false) {
+                const data = alert.data || {};
+                const level = alert.threat_level;
+                
+                const histDiv = document.createElement('div');
+                histDiv.className = `alert-item alert-${level}`;
+                histDiv.innerHTML = `
+                    <div class="threat-level ${level}">${level}</div>
+                    <div class="threat-description">${(data.sitrep || 'Alert').substring(0, 60)}...</div>
+                    <div class="timestamp">${alert.timestamp}</div>
+                `;
+                
+                const history = document.getElementById('alert-history');
+                if (!isHistorical) history.insertBefore(histDiv, history.firstChild);
+                if (history.children.length > 30) history.removeChild(history.lastChild);
+            }
+            
+            updateBreakdown() {
+                const breakdown = document.getElementById('threat-breakdown');
+                let html = '';
+                for (const [type, count] of Object.entries(this.threatTypes).sort((a, b) => b[1] - a[1])) {
+                    html += `<div style="margin-bottom: 8px;"><span style="color: #ffaa00;">${type}:</span> <span style="color: #00ff00;">${count}</span></div>`;
+                }
+                breakdown.innerHTML = html || 'No threats yet';
+            }
+            
+            updateStats(stats) {
+                this.stats = stats;
+                document.getElementById('stat-total').textContent = stats.total_alerts || 0;
+                document.getElementById('stat-red').textContent = stats.red_count || 0;
+                document.getElementById('stat-yellow').textContent = stats.yellow_count || 0;
+                document.getElementById('stat-clients').textContent = stats.connected_clients || 0;
+            }
+            
+            requestStats() {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({ type: 'get_stats' }));
+                }
+            }
+            
+            requestHistory() {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({ type: 'get_history' }));
+                }
+            }
+            
+            addSystemAlert(message, level) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert-item alert-${level}`;
+                alertDiv.textContent = message;
+                
+                const systemAlerts = document.getElementById('system-alerts');
+                systemAlerts.insertBefore(alertDiv, systemAlerts.firstChild);
+                if (systemAlerts.children.length > 15) systemAlerts.removeChild(systemAlerts.lastChild);
+            }
+            
+            playAlertSound() {
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = context.createOscillator();
+                const gain = context.createGain();
+                
+                osc.connect(gain);
+                gain.connect(context.destination);
+                
+                osc.frequency.value = 880;
+                gain.gain.setValueAtTime(0.3, context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
+                
+                osc.start(context.currentTime);
+                osc.stop(context.currentTime + 0.5);
+            }
+        }
+        
+        // Initialize dashboard
+        window.addEventListener('DOMContentLoaded', () => {
+            new DashboardClient();
+        });
+    </script>
+</body>
+</html>
